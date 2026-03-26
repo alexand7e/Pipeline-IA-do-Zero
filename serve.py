@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -9,6 +10,9 @@ import numpy as np
 
 from src.pipeline import executar_pipeline
 from src.serializacao import carregar_pacote, salvar_pacote
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s — %(message)s")
+logger = logging.getLogger(__name__)
 
 
 def _json_response(handler: BaseHTTPRequestHandler, status: int, payload: dict) -> None:
@@ -22,10 +26,12 @@ def _json_response(handler: BaseHTTPRequestHandler, status: int, payload: dict) 
 
 def _carregar_ou_treinar_pacote(path: Path) -> tuple[object, object]:
     if path.exists():
+        logger.info("Pacote encontrado em %s — carregando.", path)
         return carregar_pacote(path)
 
+    logger.info("Pacote não encontrado — treinando e salvando em %s.", path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    artefatos, _ = executar_pipeline(
+    artefatos, relatorio = executar_pipeline(
         n_amostras=1200,
         ruido=0.12,
         seed=42,
@@ -33,6 +39,13 @@ def _carregar_ou_treinar_pacote(path: Path) -> tuple[object, object]:
         epochs=250,
         taxa_aprendizado=0.05,
         tamanho_lote=64,
+        paciencia=int(os.environ.get("PACIENCIA", "20")),
+    )
+    logger.info(
+        "Treino concluído — acc=%.4f  F1=%.4f  épocas=%d",
+        relatorio["acc_teste"],
+        relatorio["f1_teste"],
+        relatorio["epocas_treinadas"],
     )
     salvar_pacote(artefatos.modelo, artefatos.padronizador, path)
     return carregar_pacote(path)
@@ -91,7 +104,7 @@ def criar_handler(servico: ServicoInferencia):
                 _json_response(self, 400, {"erro": str(e)})
 
         def log_message(self, _format: str, *_args) -> None:
-            return
+            logger.info("HTTP %s %s", self.command, self.path)
 
     return Handler
 
@@ -102,6 +115,7 @@ def main() -> None:
     caminho_pacote = Path(os.environ.get("MODEL_PATH", "artefatos/pacote_pipeline.json"))
 
     servico = ServicoInferencia(caminho_pacote=caminho_pacote)
+    logger.info("Servidor iniciado em http://%s:%d", host, port)
     httpd = ThreadingHTTPServer((host, port), criar_handler(servico))
     httpd.serve_forever()
 
