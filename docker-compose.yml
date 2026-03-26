@@ -1,0 +1,9 @@
+services:
+  pipeline-ia:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+    volumes:
+      - "./artefatos:/app/artefatos"
