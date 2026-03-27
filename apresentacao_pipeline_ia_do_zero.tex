@@ -1,0 +1,515 @@
+% ============================================================
+% Pipeline básico de um projeto de IA — Apresentação didática
+% Autor: Alexandre Barros (alexand7e.dev.br)
+% Repo : https://github.com/alexand7e/Pipeline-IA-do-Zero
+% ============================================================
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+
+% ── identidade visual ─────────────────────────────────────
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{
+  \leavevmode\hbox{%
+    \begin{beamercolorbox}[wd=.45\paperwidth,ht=2.25ex,dp=1ex,left,leftskip=2ex]{author in head/foot}
+      \usebeamerfont{author in head/foot}Alexandre Barros \textbullet{} alexand7e.dev.br
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.45\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}
+      \usebeamerfont{title in head/foot}Pipeline IA do Zero
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.1\paperwidth,ht=2.25ex,dp=1ex,right,rightskip=2ex]{date in head/foot}
+      \usebeamerfont{date in head/foot}\insertframenumber/\inserttotalframenumber
+    \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+\title[Pipeline IA do Zero]{Pipeline básico de um projeto de IA}
+\subtitle{Do problema real à decisão em produção}
+\author{Alexandre Barros}
+\institute{%
+  \href{https://alexand7e.dev.br}{alexand7e.dev.br}\\[4pt]
+  \footnotesize\texttt{github.com/alexand7e/Pipeline-IA-do-Zero}
+}
+\date{\today}
+
+% ============================================================
+\begin{document}
+% ============================================================
+
+% ── CAPA ────────────────────────────────────────────────────
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ── OBJETIVO ────────────────────────────────────────────────
+\begin{frame}{O que vamos ver hoje}
+\begin{itemize}
+  \item As \textbf{7 etapas} que todo projeto de IA percorre — do dado à predição.
+  \item Como cada escolha afeta a capacidade do modelo de \textbf{generalizar}.
+  \item Os problemas clássicos: \textbf{overfitting, underfitting, viés e variância}.
+  \item Como \textbf{avaliar de forma honesta} — além da acurácia.
+\end{itemize}
+\vfill
+\begin{block}{Proposta}
+  Entender os \emph{porquês} antes de usar frameworks. \
+  Um modelo que você entende é um modelo que você consegue corrigir.
+\end{block}
+\end{frame}
+
+% ── PROBLEMA REAL ───────────────────────────────────────────
+\begin{frame}{O problema: classificação binária}
+\begin{columns}
+\column{0.55\textwidth}
+\textbf{Exemplos reais:}
+\begin{itemize}
+  \item Fraude \textbf{vs} não fraude
+  \item Churn \textbf{vs} fidelidade
+  \item Diagnóstico \textbf{vs} saudável
+  \item Aprovado \textbf{vs} reprovado
+\end{itemize}
+\vspace{8pt}
+Em todos os casos:
+\begin{itemize}
+  \item Temos \textbf{features} $X$ (sinais observados)
+  \item Queremos prever um \textbf{rótulo} $y \in \{0, 1\}$
+  \item O modelo devolve uma \textbf{probabilidade} $\hat{p} \in (0, 1)$
+\end{itemize}
+\column{0.4\textwidth}
+\begin{block}{Decisão limiar}
+  \[
+    \hat{y} =
+    \begin{cases}
+      1 & \text{se } \hat{p} \geq 0{,}5 \\
+      0 & \text{caso contrário}
+    \end{cases}
+  \]
+  O limiar 0,5 é ajustável — depende do custo de cada tipo de erro.
+\end{block}
+\end{columns}
+\end{frame}
+
+% ── MAPA DOS 7 PASSOS ───────────────────────────────────────
+\begin{frame}{O pipeline em 7 passos}
+\begin{center}
+\begin{tabular}{cl}
+  \toprule
+  \textbf{Passo} & \textbf{O que acontece} \\
+  \midrule
+  1 & \textbf{Definir} o problema e escolher a(s) métrica(s) de sucesso \\
+  2 & \textbf{Obter} dados representativos e reproduzíveis \\
+  3 & \textbf{Preparar} os dados (transformar, normalizar) \\
+  4 & \textbf{Dividir} em treino, validação e teste \\
+  5 & \textbf{Treinar} o modelo — aprender pesos a partir dos dados \\
+  6 & \textbf{Avaliar} — medir generalização e analisar erros \\
+  7 & \textbf{Empacotar} — levar o modelo para produção \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\vfill
+\begin{alertblock}{Importante}
+  Cada passo influencia todos os seguintes.
+  Pular ou errar o passo 1 compromete os 6 restantes.
+\end{alertblock}
+\end{frame}
+
+% ── PASSO 1: PROBLEMA E MÉTRICA ─────────────────────────────
+\begin{frame}{Passo 1 — Definir o problema e a métrica}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Perguntas obrigatórias:}
+\begin{itemize}
+  \item O que queremos prever?
+  \item Como saberemos se acertamos?
+  \item Qual erro é mais caro — falso positivo ou falso negativo?
+\end{itemize}
+\vspace{6pt}
+\textbf{Métricas comuns:}
+\begin{itemize}
+  \item Acurácia, Precisão, Recall, F1
+  \item AUC-ROC (robusta ao desbalanceamento)
+\end{itemize}
+\column{0.45\textwidth}
+\begin{alertblock}{Acurácia pode enganar}
+  Dataset com 95\% de classe 0:\\
+  um modelo que sempre prediz 0\\
+  tem \textbf{95\% de acurácia} e \textbf{recall = 0}.\\[4pt]
+  \textit{Métricas definem o que "bom" significa — escolha antes de treinar.}
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+% ── MÉTRICAS ────────────────────────────────────────────────
+\begin{frame}{Métricas de classificação binária}
+\begin{columns}
+\column{0.5\textwidth}
+\[
+  \text{Precisão} = \frac{TP}{TP + FP}
+  \quad \text{(confiança no positivo)}
+\]
+\[
+  \text{Recall} = \frac{TP}{TP + FN}
+  \quad \text{(cobertura do positivo)}
+\]
+\[
+  F_1 = \frac{2 \cdot P \cdot R}{P + R}
+  \quad \text{(balanço)}
+\]
+\column{0.45\textwidth}
+\begin{center}
+\textbf{Matriz de confusão}\\[6pt]
+\begin{tabular}{r|cc}
+         & Pred 0 & Pred 1 \\
+\hline
+Real 0   & \textcolor{blue}{TN} & \textcolor{red}{FP} \\
+Real 1   & \textcolor{red}{FN} & \textcolor{blue}{TP} \\
+\end{tabular}
+\vspace{8pt}
+
+\footnotesize
+\textcolor{red}{FP} = alarme falso \\
+\textcolor{red}{FN} = caso perdido \\[4pt]
+\textit{O custo de cada erro depende do domínio.}
+\end{center}
+\end{columns}
+\end{frame}
+
+% ── PASSO 2: DADOS ──────────────────────────────────────────
+\begin{frame}{Passo 2 — Obter dados}
+\begin{columns}
+\column{0.55\textwidth}
+\begin{block}{Princípio fundamental}
+  \textit{``Garbage in, garbage out''} \\
+  Um modelo é tão bom quanto os dados que o treinaram.
+\end{block}
+\vspace{8pt}
+\textbf{O que garantir:}
+\begin{itemize}
+  \item \textbf{Representatividade} — os dados refletem o mundo real?
+  \item \textbf{Reprodutibilidade} — semente aleatória fixa (\textit{seed})
+  \item \textbf{Qualidade} — valores ausentes, outliers, inconsistências
+  \item \textbf{Volume} — suficiente para generalizar e avaliar
+\end{itemize}
+\column{0.4\textwidth}
+\begin{exampleblock}{Neste projeto}
+  Dataset sintético \textit{``duas luas''}: \\
+  problema não-linear com 2 features, \\
+  visualmente interpretável.\\[4pt]
+  Serve para focar no \emph{pipeline}, \\
+  não nas particularidades dos dados.
+\end{exampleblock}
+\end{columns}
+\end{frame}
+
+% ── PASSO 3: PRÉ-PROCESSAMENTO ──────────────────────────────
+\begin{frame}{Passo 3 — Preparar os dados}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Padronização Z-score:}
+\[
+  X' = \frac{X - \mu}{\sigma}
+\]
+\begin{itemize}
+  \item Coloca todas as features na mesma escala
+  \item Melhora convergência do gradiente
+\end{itemize}
+\vspace{8pt}
+\textbf{Regra de ouro — evitar vazamento:}
+\begin{itemize}
+  \item $\mu$ e $\sigma$ calculados \textbf{só no treino}
+  \item Aplicados igualmente em validação, teste e produção
+\end{itemize}
+\column{0.45\textwidth}
+\begin{alertblock}{Vazamento de dados (\textit{data leakage})}
+  Calcular a normalização com teste/validação é usar ``informação do futuro'' no treino.\\[4pt]
+  Resulta em estimativas de performance otimistas — e surpresas em produção.
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+% ── PASSO 4: SPLIT ──────────────────────────────────────────
+\begin{frame}{Passo 4 — Dividir os dados}
+\begin{center}
+\begin{tabular}{lcl}
+  \toprule
+  \textbf{Conjunto} & \textbf{Proporção} & \textbf{Papel} \\
+  \midrule
+  Treino     & 70\% & Ajusta os pesos do modelo \\
+  Validação  & 15\% & Guia decisões durante o desenvolvimento \\
+  Teste      & 15\% & Avalia a performance \textbf{final} (usar uma só vez) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\vfill
+\begin{columns}
+\column{0.48\textwidth}
+\begin{block}{Por que validação separada?}
+  Cada vez que você toma uma decisão olhando para o teste (escolher arquitetura, hiperparâmetros), você indiretamente treina nele.
+  A validação existe para proteger a integridade do teste.
+\end{block}
+\column{0.48\textwidth}
+\begin{block}{Embaralhamento}
+  Antes de dividir, embaralhe os dados com uma \textit{seed} fixa.
+  Garante que as classes estejam distribuídas de forma similar nos três conjuntos.
+\end{block}
+\end{columns}
+\end{frame}
+
+% ── PASSO 5: MODELO ─────────────────────────────────────────
+\begin{frame}{Passo 5 — Treinar o modelo}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{O modelo: MLP (rede neural densa)}
+\begin{itemize}
+  \item Camadas ocultas com ativação \textbf{ReLU}
+  \item Camada de saída com \textbf{Sigmoid} $\to$ probabilidade
+  \item Cada camada aprende uma representação mais abstrata
+\end{itemize}
+\vspace{6pt}
+\textbf{Função de perda: BCE}
+\[
+  \mathcal{L} = -\frac{1}{n}\sum_{i=1}^{n}
+  \bigl[ y_i \log\hat{p}_i + (1-y_i)\log(1-\hat{p}_i) \bigr]
+\]
+\column{0.45\textwidth}
+\textbf{Arquitetura usada:}\\[6pt]
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  Camada & Operação \\
+  \midrule
+  Entrada  & 2 features \\
+  Oculta 1 & Dense(16) + ReLU \\
+  Oculta 2 & Dense(16) + ReLU \\
+  Saída    & Dense(1)  + Sigmoid \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\end{columns}
+\end{frame}
+
+% ── OTIMIZAÇÃO ──────────────────────────────────────────────
+\begin{frame}{Como o modelo aprende}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Gradiente descendente estocástico (SGD):}
+\begin{enumerate}
+  \item Passa um mini-batch pelo modelo (\textit{forward})
+  \item Calcula o gradiente da perda (\textit{backward})
+  \item Atualiza os pesos na direção oposta ao gradiente:
+  \[
+    W \leftarrow W - \eta \cdot \nabla_W \mathcal{L}
+  \]
+  \item Repete por épocas
+\end{enumerate}
+\column{0.45\textwidth}
+\begin{block}{O que é uma época?}
+  Uma passagem completa pelo conjunto de treino.
+  Com mini-batches, a cada época o modelo vê todos os exemplos em pequenos grupos.
+\end{block}
+\vspace{6pt}
+\begin{block}{Por que mini-batches?}
+  Equilíbrio entre estabilidade (batch completo)
+  e velocidade/ruído benéfico (amostras individuais).
+\end{block}
+\end{columns}
+\end{frame}
+
+% ── VIÉS, VARIÂNCIA E GENERALIZAÇÃO ─────────────────────────
+\begin{frame}{Viés, Variância e Generalização}
+\begin{center}
+\begin{tabular}{lcc}
+  \toprule
+  & \textbf{Treino} & \textbf{Validação / Teste} \\
+  \midrule
+  \textbf{Underfitting} (viés alto)   & Erro alto  & Erro alto \\
+  \textbf{Situação ideal}              & Erro baixo & Erro baixo \\
+  \textbf{Overfitting} (variância alta)& Erro baixo & Erro alto \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\vfill
+\begin{columns}
+\column{0.32\textwidth}
+\begin{alertblock}{Underfitting}
+  Modelo muito simples. Não captura os padrões nos dados.\\
+  \textit{Solução: mais capacidade, mais épocas, menos regularização.}
+\end{alertblock}
+\column{0.32\textwidth}
+\begin{exampleblock}{Generalização}
+  O modelo aprende os padrões do problema — e funciona em dados novos.\\
+  \textit{Objetivo real de todo pipeline.}
+\end{exampleblock}
+\column{0.32\textwidth}
+\begin{alertblock}{Overfitting}
+  Modelo memoriza o treino. Falha em dados novos.\\
+  \textit{Solução: mais dados, regularização, dropout, early stopping.}
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+% ── DIAGNÓSTICO ─────────────────────────────────────────────
+\begin{frame}{Diagnosticar pelo histórico de treino}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Leitura das curvas de loss:}
+\begin{itemize}
+  \item \textcolor{blue}{loss\_treino} cai: o modelo está aprendendo
+  \item \textcolor{orange}{loss\_valid} cai junto: generalização boa
+  \item \textcolor{orange}{loss\_valid} para e começa a subir: \textbf{overfitting}
+  \item Ambas altas e estagnadas: \textbf{underfitting}
+\end{itemize}
+\vspace{8pt}
+\textbf{Gap treino–validação:}
+\[
+  \Delta = \mathcal{L}_{\text{valid}} - \mathcal{L}_{\text{treino}}
+\]
+$\Delta$ pequeno $\to$ boa generalização \quad $\Delta$ grande $\to$ overfitting
+\column{0.45\textwidth}
+\begin{block}{Early stopping}
+  Interrompe o treino quando a loss de validação não melhora por $p$ épocas consecutivas (\textit{paciência}).\\[4pt]
+  \begin{itemize}
+    \item Evita overfitting sem acertar o número de épocas na mão
+    \item O melhor checkpoint é o de menor loss de validação
+  \end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+% ── PASSO 6: AVALIAÇÃO ──────────────────────────────────────
+\begin{frame}{Passo 6 — Avaliar e analisar erros}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Avaliar sempre no conjunto de teste — uma única vez.}\\[6pt]
+\textbf{Relatório completo:}
+\begin{itemize}
+  \item Loss (BCE) — qualidade probabilística
+  \item Acurácia — proporção de acertos
+  \item Precisão — confiança ao prever positivo
+  \item Recall — cobertura dos positivos reais
+  \item F1-Score — balanço precisão/recall
+  \item Matriz de confusão — mapa dos erros
+\end{itemize}
+\column{0.45\textwidth}
+\begin{block}{FP vs FN — o custo depende do domínio}
+  \begin{itemize}
+    \item \textbf{Spam}: FP = e-mail legítimo na lixeira (incomoda)
+    \item \textbf{Fraude}: FN = transação fraudulenta ignorada (caro)
+    \item \textbf{Diagnóstico}: FN = doença não detectada (grave)
+  \end{itemize}
+\end{block}
+\vspace{4pt}
+\begin{alertblock}{Ciclo de análise}
+  Avaliar $\to$ entender os erros $\to$ revisar dados ou modelo $\to$ retreinar
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+% ── PASSO 7: PRODUÇÃO ───────────────────────────────────────
+\begin{frame}{Passo 7 — Empacotar e colocar em produção}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{O que vai para produção:}
+\begin{itemize}
+  \item Os \textbf{pesos e vieses} do modelo treinado
+  \item Os \textbf{parâmetros do pré-processamento} ($\mu$, $\sigma$)
+  \item \textbf{Não} os dados de treino
+\end{itemize}
+\vspace{6pt}
+\textbf{Por que empacotar junto?}
+\begin{itemize}
+  \item Um dado novo em produção passa \textbf{exatamente} pelo mesmo pré-processamento do treino
+  \item Separar os dois é garantia de inconsistência futura
+\end{itemize}
+\column{0.45\textwidth}
+\begin{block}{Inferência em produção}
+  \begin{enumerate}
+    \item Recebe features brutas $X$
+    \item Aplica pré-processamento: $X' = (X - \mu)/\sigma$
+    \item Passa pelo modelo: $\hat{p} = \text{MLP}(X')$
+    \item Decide: $\hat{y} = \mathbb{1}[\hat{p} \geq 0{,}5]$
+    \item Retorna $\hat{p}$ e $\hat{y}$
+  \end{enumerate}
+\end{block}
+\end{columns}
+\end{frame}
+
+% ── PRÓXIMOS PASSOS ─────────────────────────────────────────
+\begin{frame}{Após o primeiro modelo: o que vem depois}
+\begin{columns}
+\column{0.48\textwidth}
+\textbf{Melhorar o modelo:}
+\begin{itemize}
+  \item Busca de hiperparâmetros (learning rate, arquitetura)
+  \item Regularização (L2, Dropout)
+  \item Mais dados ou técnicas de aumento de dados
+  \item Calibração de probabilidade
+\end{itemize}
+\column{0.48\textwidth}
+\textbf{Sustentabilidade em produção:}
+\begin{itemize}
+  \item Monitoramento de \textit{data drift}
+  \item Versionamento de modelos
+  \item Re-treino periódico
+  \item Testes automatizados do pipeline
+\end{itemize}
+\end{columns}
+\vfill
+\begin{block}{O pipeline é um ciclo, não uma linha reta}
+  Dados $\to$ Modelo $\to$ Produção $\to$ Feedback $\to$ Novos Dados $\to$ \ldots
+\end{block}
+\end{frame}
+
+% ── REFERÊNCIAS ─────────────────────────────────────────────
+\begin{frame}{Referências}
+\footnotesize
+\begin{itemize}
+  \item GOODFELLOW, I.; BENGIO, Y.; COURVILLE, A.
+        \textit{Deep Learning}. MIT Press, 2016.
+        Disponível em: \url{http://www.deeplearningbook.org}
+
+  \item RODRIGUES, M. G. A.
+        \textit{Redes Neurais Artificiais: Teoria e Aplicações}.
+        TCC — Universidade de Brasília, 2023.
+        \url{https://bdm.unb.br/bitstream/10483/36835/1/2023\_MatheusGabrielAlvesRodrigues\_tcc.pdf}
+
+  \item IBM.
+        \textit{What is a Machine Learning Pipeline?}
+        IBM Think, 2024.
+        \url{https://www.ibm.com/think/topics/machine-learning-pipeline}
+
+  \item ALURA.
+        \textit{Pipeline de IA: o que é e como funciona}.
+        Alura, 2024.
+        \url{https://www.alura.com.br/artigos/pipeline-de-ia}
+\end{itemize}
+\vfill
+\begin{center}
+  \small Código-fonte completo: \url{https://github.com/alexand7e/Pipeline-IA-do-Zero}
+\end{center}
+\end{frame}
+
+% ── ENCERRAMENTO ────────────────────────────────────────────
+\begin{frame}
+\begin{center}
+  \vfill
+  {\Large \textbf{Obrigado!}}\\[12pt]
+  \textit{Perguntas?}\\[20pt]
+  \hrule
+  \vspace{10pt}
+  \small
+  Alexandre Barros\\
+  \href{https://alexand7e.dev.br}{alexand7e.dev.br}\\[4pt]
+  \href{https://github.com/alexand7e/Pipeline-IA-do-Zero}{\texttt{github.com/alexand7e/Pipeline-IA-do-Zero}}
+  \vfill
+\end{center}
+\end{frame}
+
+\end{document}
